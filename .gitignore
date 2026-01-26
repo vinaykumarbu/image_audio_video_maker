@@ -1,0 +1,41 @@
+# Generated Videos
+output/*.mp4
+output/*.avi
+output/*.mov
+
+# Logs
+output/*.log
+*.log
+
+# Input files (users add their own)
+input/images/*
+!input/images/README.md
+input/audio/*
+!input/audio/README.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Docker
+.docker/
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

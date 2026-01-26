@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  video-generator:
+    build: .
+    container_name: image_audio_video_maker
+    volumes:
+      - ./input/images:/app/input/images
+      - ./input/audio:/app/input/audio
+      - ./output:/app/output
+    environment:
+      - PYTHONUNBUFFERED=1
+    stdin_open: true
+    tty: true

@@ -1,0 +1,292 @@
+#!/usr/bin/env python3
+"""
+Video Generator Script - Combines matching images and audio files into high-resolution videos
+Optimized for YouTube with parallel processing support
+"""
+
+import os
+import subprocess
+import sys
+from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List, Tuple, Dict
+import logging
+from datetime import datetime
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('video_generation.log'),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger(__name__)
+
+
+class VideoGenerator:
+    """Generate high-resolution videos from matching image and audio files"""
+    
+    # Paths (Docker mounted volumes)
+    INPUT_IMAGES_FOLDER = "/app/input/images"
+    INPUT_AUDIO_FOLDER = "/app/input/audio"
+    OUTPUT_VIDEOS_FOLDER = "/app/output"
+    
+    # Supported formats
+    IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.bmp'}
+    AUDIO_EXTENSIONS = {'.mp3', '.wav', '.m4a', '.aac', '.flac'}
+    
+    # Video settings (YouTube optimized)
+    VIDEO_RESOLUTION = "1920x1080"  # 1080p
+    VIDEO_CODEC = "libx264"
+    AUDIO_CODEC = "aac"
+    AUDIO_BITRATE = "192k"
+    PIXEL_FORMAT = "yuv420p"
+    CRF = "23"  # Constant Rate Factor (lower = better quality, 23 is good balance)
+    PRESET = "medium"  # Encoding speed vs compression (medium is good balance)
+    
+    def __init__(self, max_workers: int = 4):
+        """
+        Initialize the video generator
+        
+        Args:
+            max_workers: Maximum number of parallel video generation processes
+        """
+        self.max_workers = max_workers
+        self._validate_ffmpeg()
+        self._create_output_directory()
+    
+    def _validate_ffmpeg(self):
+        """Check if FFMPEG is installed and accessible"""
+        try:
+            result = subprocess.run(
+                ['ffmpeg', '-version'],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            logger.info("FFMPEG is available")
+            logger.debug(f"FFMPEG version: {result.stdout.split()[2]}")
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            logger.error("FFMPEG is not installed or not in PATH")
+            sys.exit(1)
+    
+    def _create_output_directory(self):
+        """Create output directory if it doesn't exist"""
+        Path(self.OUTPUT_VIDEOS_FOLDER).mkdir(parents=True, exist_ok=True)
+        logger.info(f"Output directory ready: {self.OUTPUT_VIDEOS_FOLDER}")
+    
+    def _get_file_pairs(self) -> List[Tuple[Path, Path, str]]:
+        """
+        Find matching image and audio files
+        
+        Returns:
+            List of tuples (image_path, audio_path, base_name)
+        """
+        # Get all image files
+        image_files: Dict[str, Path] = {}
+        image_folder = Path(self.INPUT_IMAGES_FOLDER)
+        
+        if not image_folder.exists():
+            logger.error(f"Image folder not found: {self.INPUT_IMAGES_FOLDER}")
+            return []
+        
+        for img_file in image_folder.iterdir():
+            if img_file.suffix.lower() in self.IMAGE_EXTENSIONS:
+                base_name = img_file.stem
+                image_files[base_name] = img_file
+        
+        logger.info(f"Found {len(image_files)} image files")
+        
+        # Get all audio files and match with images
+        audio_folder = Path(self.INPUT_AUDIO_FOLDER)
+        
+        if not audio_folder.exists():
+            logger.error(f"Audio folder not found: {self.INPUT_AUDIO_FOLDER}")
+            return []
+        
+        matched_pairs: List[Tuple[Path, Path, str]] = []
+        
+        for audio_file in audio_folder.iterdir():
+            if audio_file.suffix.lower() in self.AUDIO_EXTENSIONS:
+                base_name = audio_file.stem
+                
+                if base_name in image_files:
+                    matched_pairs.append((
+                        image_files[base_name],
+                        audio_file,
+                        base_name
+                    ))
+                    logger.info(f"Matched pair: {base_name}")
+                else:
+                    logger.warning(f"No matching image for audio: {audio_file.name}")
+        
+        logger.info(f"Found {len(matched_pairs)} matching pairs")
+        return matched_pairs
+    
+    def _generate_single_video(
+        self,
+        image_path: Path,
+        audio_path: Path,
+        output_name: str
+    ) -> Tuple[str, bool, str]:
+        """
+        Generate a single video from image and audio
+        
+        Args:
+            image_path: Path to the image file
+            audio_path: Path to the audio file
+            output_name: Base name for the output file
+            
+        Returns:
+            Tuple of (output_name, success, message)
+        """
+        output_path = Path(self.OUTPUT_VIDEOS_FOLDER) / f"{output_name}.mp4"
+        
+        try:
+            logger.info(f"Starting video generation: {output_name}")
+            
+            # FFMPEG command for high-quality video generation
+            cmd = [
+                'ffmpeg',
+                '-y',  # Overwrite output file if exists
+                '-loop', '1',  # Loop the image
+                '-i', str(image_path),  # Input image
+                '-i', str(audio_path),  # Input audio
+                '-c:v', self.VIDEO_CODEC,  # Video codec
+                '-tune', 'stillimage',  # Optimize for still image
+                '-c:a', self.AUDIO_CODEC,  # Audio codec
+                '-b:a', self.AUDIO_BITRATE,  # Audio bitrate
+                '-pix_fmt', self.PIXEL_FORMAT,  # Pixel format for compatibility
+                '-crf', self.CRF,  # Quality setting
+                '-preset', self.PRESET,  # Encoding preset
+                '-vf', f'scale={self.VIDEO_RESOLUTION}:force_original_aspect_ratio=decrease,pad={self.VIDEO_RESOLUTION}:(ow-iw)/2:(oh-ih)/2',  # Scale and pad to 1080p
+                '-shortest',  # End video when audio ends
+                '-movflags', '+faststart',  # Optimize for web streaming
+                str(output_path)
+            ]
+            
+            # Run FFMPEG
+            subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            
+            # Check if output file was created
+            if output_path.exists():
+                file_size = output_path.stat().st_size / (1024 * 1024)  # Size in MB
+                logger.info(f"✓ Successfully generated: {output_name}.mp4 ({file_size:.2f} MB)")
+                return (output_name, True, f"Success - {file_size:.2f} MB")
+            else:
+                logger.error(f"✗ Output file not created: {output_name}")
+                return (output_name, False, "Output file not created")
+                
+        except subprocess.CalledProcessError as e:
+            error_msg = f"FFMPEG error: {e.stderr[-200:]}"  # Last 200 chars of error
+            logger.error(f"✗ Failed to generate {output_name}: {error_msg}")
+            return (output_name, False, error_msg)
+        except Exception as e:
+            error_msg = str(e)
+            logger.error(f"✗ Unexpected error for {output_name}: {error_msg}")
+            return (output_name, False, error_msg)
+    
+    def generate_videos(self) -> Dict[str, any]:
+        """
+        Generate all videos from matched pairs in parallel
+        
+        Returns:
+            Dictionary with generation statistics
+        """
+        start_time = datetime.now()
+        logger.info("="*60)
+        logger.info("Starting video generation process")
+        logger.info("="*60)
+        
+        # Get matched pairs
+        file_pairs = self._get_file_pairs()
+        
+        if not file_pairs:
+            logger.error("No matching image/audio pairs found!")
+            return {
+                'total': 0,
+                'success': 0,
+                'failed': 0,
+                'duration': 0
+            }
+        
+        logger.info(f"Processing {len(file_pairs)} videos with {self.max_workers} workers")
+        
+        # Process videos in parallel
+        results = {
+            'total': len(file_pairs),
+            'success': 0,
+            'failed': 0,
+            'details': []
+        }
+        
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            # Submit all tasks
+            future_to_name = {
+                executor.submit(
+                    self._generate_single_video,
+                    img_path,
+                    audio_path,
+                    base_name
+                ): base_name
+                for img_path, audio_path, base_name in file_pairs
+            }
+            
+            # Process completed tasks
+            for future in as_completed(future_to_name):
+                name, success, message = future.result()
+                results['details'].append({
+                    'name': name,
+                    'success': success,
+                    'message': message
+                })
+                
+                if success:
+                    results['success'] += 1
+                else:
+                    results['failed'] += 1
+        
+        # Calculate duration
+        end_time = datetime.now()
+        duration = (end_time - start_time).total_seconds()
+        results['duration'] = duration
+        
+        # Print summary
+        logger.info("="*60)
+        logger.info("Video Generation Complete!")
+        logger.info("="*60)
+        logger.info(f"Total videos processed: {results['total']}")
+        logger.info(f"✓ Successful: {results['success']}")
+        logger.info(f"✗ Failed: {results['failed']}")
+        logger.info(f"⏱ Total time: {duration:.2f} seconds")
+        logger.info(f"📁 Output folder: {self.OUTPUT_VIDEOS_FOLDER}")
+        logger.info("="*60)
+        
+        return results
+
+
+def main():
+    """Main entry point"""
+    print("🎬 Video Generator - High Resolution Video Creation")
+    print("="*60)
+    
+    # Create generator instance
+    # Adjust max_workers based on your system (4 is a good default)
+    generator = VideoGenerator(max_workers=4)
+    
+    # Generate videos
+    results = generator.generate_videos()
+    
+    # Exit with appropriate code
+    sys.exit(0 if results['failed'] == 0 else 1)
+
+
+if __name__ == "__main__":
+    main()
