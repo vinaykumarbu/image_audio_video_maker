@@ -40,12 +40,19 @@ logger = logging.getLogger(__name__)
 class GoogleDriveDownloader:
     """Download media files from Google Drive nested language folders"""
     
-    # Base paths - matching your video generator structure
-    BASE_PATH = "/Users/vkuma153/video_generator/image_audio_video_maker"
-    INPUT_IMAGES_FOLDER = f"{BASE_PATH}/input/images"
-    INPUT_AUDIO_FOLDER = f"{BASE_PATH}/input/audio"
-    INPUT_BACKGROUND_FOLDER = f"{BASE_PATH}/input/background"
-    TEMP_DOWNLOAD_FOLDER = f"{BASE_PATH}/temp_download"
+    # # Base paths - matching your video generator structure
+    # BASE_PATH = "/Users/vkuma153/video_generator/image_audio_video_maker"
+    # INPUT_IMAGES_FOLDER = f"{BASE_PATH}/input/images"
+    # INPUT_AUDIO_FOLDER = f"{BASE_PATH}/input/audio"
+    # INPUT_BACKGROUND_FOLDER = f"{BASE_PATH}/input/background"
+    # TEMP_DOWNLOAD_FOLDER = f"{BASE_PATH}/temp_download"
+
+     # Base paths - automatically detect script location (works on any machine)
+    BASE_PATH = Path(__file__).parent.resolve()
+    INPUT_IMAGES_FOLDER = BASE_PATH / "input" / "images"
+    INPUT_AUDIO_FOLDER = BASE_PATH / "input" / "audio"
+    INPUT_BACKGROUND_FOLDER = BASE_PATH / "input" / "background"
+    TEMP_DOWNLOAD_FOLDER = BASE_PATH / "temp_download"
     
     # ======================================================================
     # 🔧 CONFIGURATION - Language Folder IDs
