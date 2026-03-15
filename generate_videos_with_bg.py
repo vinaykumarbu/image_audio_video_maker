@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Video Generator Script - Combines matching images and audio files into high-resolution videos
+Video Generator Script with Background Music Support
+Combines matching images and audio files into high-resolution videos with background music
 Optimized for YouTube with parallel processing support
 """
 
@@ -9,7 +10,7 @@ import subprocess
 import sys
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 import logging
 from datetime import datetime
 
@@ -26,11 +27,12 @@ logger = logging.getLogger(__name__)
 
 
 class VideoGenerator:
-    """Generate high-resolution videos from matching image and audio files"""
+    """Generate high-resolution videos from matching image and audio files with background music"""
     
     # Paths (Docker mounted volumes)
     INPUT_IMAGES_FOLDER = "/Users/vkuma153/video_generator/image_audio_video_maker/input/images"
     INPUT_AUDIO_FOLDER = "/Users/vkuma153/video_generator/image_audio_video_maker/input/audio"
+    INPUT_BACKGROUND_FOLDER = "/Users/vkuma153/video_generator/image_audio_video_maker/input/background/background.mp3"  # Change this to your background music file path
     OUTPUT_VIDEOS_FOLDER = "/Users/vkuma153/video_generator/image_audio_video_maker/output"
     
     # Supported formats
@@ -46,14 +48,29 @@ class VideoGenerator:
     CRF = "23"  # Constant Rate Factor (lower = better quality, 23 is good balance)
     PRESET = "medium"  # Encoding speed vs compression (medium is good balance)
     
+    # Background music settings
+    BACKGROUND_MUSIC_VOLUME = "0.01"  # 10% volume (adjust as needed: 0.05 = 5%, 0.15 = 15%, 0.2 = 20%, etc.)
+    
     def __init__(self, max_workers: int = 4):
         """
         Initialize the video generator
         
         Args:
             max_workers: Maximum number of parallel video generation processes
+            background_music_path: Optional path to background music file (if None, no background music)
         """
         self.max_workers = max_workers
+        self.INPUT_BACKGROUND_FOLDER = Path(self.INPUT_BACKGROUND_FOLDER) if self.INPUT_BACKGROUND_FOLDER else None
+        
+        if self.INPUT_BACKGROUND_FOLDER and not self.INPUT_BACKGROUND_FOLDER.exists():
+            logger.warning(f"Background music file not found: {self.INPUT_BACKGROUND_FOLDER}")
+            logger.warning("Continuing without background music...")
+            self.INPUT_BACKGROUND_FOLDER = None
+        
+        if self.INPUT_BACKGROUND_FOLDER:
+            logger.info(f"Background music enabled: {self.INPUT_BACKGROUND_FOLDER}")
+            logger.info(f"Background music volume: {float(self.BACKGROUND_MUSIC_VOLUME) * 100:.0f}%")
+        
         self._validate_ffmpeg()
         self._create_output_directory()
     
@@ -132,7 +149,7 @@ class VideoGenerator:
         output_name: str
     ) -> Tuple[str, bool, str]:
         """
-        Generate a single video from image and audio
+        Generate a single video from image and audio (with optional background music)
         
         Args:
             image_path: Path to the image file
@@ -147,25 +164,61 @@ class VideoGenerator:
         try:
             logger.info(f"Starting video generation: {output_name}")
             
-            # FFMPEG command for high-quality video generation
+            # Parse resolution for pad filter (needs width:height format)
+            width, height = self.VIDEO_RESOLUTION.split('x')
+            pad_resolution = f"{width}:{height}"
+            
+            # Build FFMPEG command
             cmd = [
                 'ffmpeg',
                 '-y',  # Overwrite output file if exists
                 '-loop', '1',  # Loop the image
-                '-i', str(image_path),  # Input image
-                '-i', str(audio_path),  # Input audio
+                '-i', str(image_path),  # Input 0: Image
+                '-i', str(audio_path),  # Input 1: Main audio
+            ]
+            
+            # Add background music input if enabled
+            if self.INPUT_BACKGROUND_FOLDER:
+                cmd.extend([
+                    '-stream_loop', '-1',  # Loop background music indefinitely
+                    '-i', str(self.INPUT_BACKGROUND_FOLDER),  # Input 2: Background music
+                ])
+            
+            # Add video encoding options
+            cmd.extend([
                 '-c:v', self.VIDEO_CODEC,  # Video codec
                 '-tune', 'stillimage',  # Optimize for still image
-                '-c:a', self.AUDIO_CODEC,  # Audio codec
-                '-b:a', self.AUDIO_BITRATE,  # Audio bitrate
                 '-pix_fmt', self.PIXEL_FORMAT,  # Pixel format for compatibility
                 '-crf', self.CRF,  # Quality setting
                 '-preset', self.PRESET,  # Encoding preset
-                '-vf', f'scale={self.VIDEO_RESOLUTION}:force_original_aspect_ratio=decrease,pad={self.VIDEO_RESOLUTION}:(ow-iw)/2:(oh-ih)/2',  # Scale and pad to 1080p
+                '-vf', f'scale={self.VIDEO_RESOLUTION}:force_original_aspect_ratio=decrease,pad={pad_resolution}:(ow-iw)/2:(oh-ih)/2',  # Scale and pad to 1080p
+            ])
+            
+            # Add audio mixing filter if background music is enabled
+            if self.INPUT_BACKGROUND_FOLDER:
+                # Filter: [2:a]volume=0.2[bg] - Lower background music volume
+                #         [1:a][bg]amix=inputs=2:duration=first[aout] - Mix main audio + background
+                filter_complex = f"[2:a]volume={self.BACKGROUND_MUSIC_VOLUME}[bg];[1:a][bg]amix=inputs=2:duration=first[aout]"
+                cmd.extend([
+                    '-filter_complex', filter_complex,
+                    '-map', '0:v',  # Map video from input 0 (image)
+                    '-map', '[aout]',  # Map mixed audio output
+                ])
+            else:
+                # No background music - just map video and main audio
+                cmd.extend([
+                    '-map', '0:v',  # Map video from input 0 (image)
+                    '-map', '1:a',  # Map audio from input 1 (main audio)
+                ])
+            
+            # Add audio encoding and final options
+            cmd.extend([
+                '-c:a', self.AUDIO_CODEC,  # Audio codec
+                '-b:a', self.AUDIO_BITRATE,  # Audio bitrate
                 '-shortest',  # End video when audio ends
                 '-movflags', '+faststart',  # Optimize for web streaming
                 str(output_path)
-            ]
+            ])
             
             # Run FFMPEG
             subprocess.run(
@@ -203,6 +256,10 @@ class VideoGenerator:
         start_time = datetime.now()
         logger.info("="*60)
         logger.info("Starting video generation process")
+        if self.INPUT_BACKGROUND_FOLDER:
+            logger.info("Background music: ENABLED")
+        else:
+            logger.info("Background music: DISABLED")
         logger.info("="*60)
         
         # Get matched pairs
@@ -274,12 +331,18 @@ class VideoGenerator:
 
 def main():
     """Main entry point"""
-    print("🎬 Video Generator - High Resolution Video Creation")
+    print("🎬 Video Generator with Background Music - High Resolution Video Creation")
     print("="*60)
+    
+    
+    # If you want to use background music, uncomment and set the path:
+    # background_music = "/Users/vinaykumarbu/Workspace/srisatupasi/image_audio_video_maker-main/input/audio/background_music.mp3"
     
     # Create generator instance
     # Adjust max_workers based on your system (4 is a good default)
-    generator = VideoGenerator(max_workers=4)
+    generator = VideoGenerator(
+        max_workers=5,
+    )
     
     # Generate videos
     results = generator.generate_videos()

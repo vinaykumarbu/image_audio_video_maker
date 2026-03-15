@@ -303,3 +303,47 @@ For issues or questions:
 ---
 
 **Made with ❤️ for easy video generation from images and audio**
+
+# Download media for English videos 1-5
+
+./download.sh --language ENGLISH --start 1 --end 5
+
+# Generate the videos
+
+python3 generate_videos_with_bg.py
+
+# Upload generated videos and delete local copies
+
+python3 upload_to_gdrive.py --language ENGLISH --delete
+
+---
+
+# Step 1: Download media from Google Drive
+
+python3 download_from_gdrive.py --language ENGLISH --start 1 --end 10
+
+# Step 2: Generate videos
+
+python3 generate_videos_with_bg.py
+
+# Step 3: Upload videos back to Google Drive
+
+python3 upload_to_gdrive.py --language ENGLISH
+
+---
+
+# Upload all videos (auto-detects language from filename)
+
+python3 upload_to_gdrive.py
+
+# Upload only ENGLISH videos
+
+python3 upload_to_gdrive.py --language ENGLISH
+
+# Upload and delete local files after success
+
+python3 upload_to_gdrive.py --delete
+
+# Upload specific language and clean up
+
+python3 upload_to_gdrive.py --language KANNADA --delete
