@@ -30,16 +30,16 @@ jobs:
     name: Generate ${{ inputs.language }} Videos (${{ inputs.start }}-${{ inputs.end }})
     runs-on: macos-latest
     timeout-minutes: 90
-    
+
     steps:
       - name: 📥 Checkout Code
         uses: actions/checkout@v4
-      
+
       - name: 🐍 Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      
+
       - name: 🔧 Install System Dependencies
         run: |
           echo "Installing gdown..."
@@ -49,7 +49,7 @@ jobs:
           echo "Installing gdrive..."
           brew tap prasmussen/gdrive
           brew install gdrive || echo "gdrive install failed, trying alternate method"
-      
+
       - name: 📂 Setup Google Drive Authentication
         env:
           GDRIVE_TOKEN: ${{ secrets.GDRIVE_TOKEN }}
@@ -57,7 +57,7 @@ jobs:
           mkdir -p ~/.gdrive
           echo "$GDRIVE_TOKEN" > ~/.gdrive/token_v2.json
           echo "✓ Google Drive authentication configured"
-      
+
       - name: 📥 Download Media from Google Drive
         run: |
           echo "Downloading ${{ inputs.language }} media files (${{ inputs.start }}-${{ inputs.end }})"
@@ -65,7 +65,7 @@ jobs:
             --language ${{ inputs.language }} \
             --start ${{ inputs.start }} \
             --end ${{ inputs.end }}
-      
+
       - name: 📊 Verify Downloaded Files
         run: |
           echo "Images in input folder:"
@@ -73,18 +73,18 @@ jobs:
           echo ""
           echo "Audio in input folder:"
           ls -lh input/audio/ || echo "No audio folder or empty"
-      
+
       - name: 🎬 Generate Videos
         run: |
           echo "Starting video generation..."
           python3 generate_videos_with_bg.py
           echo "✓ Video generation complete"
-      
+
       - name: 📊 List Generated Videos
         run: |
           echo "Generated videos:"
           ls -lh output/*.mp4 || echo "No videos generated"
-      
+
       - name: 📤 Upload Videos to Google Drive
         run: |
           echo "Uploading ${{ inputs.language }} videos to Google Drive..."
@@ -92,7 +92,7 @@ jobs:
             --language ${{ inputs.language }} \
             --delete
           echo "✓ Upload complete, local files deleted"
-      
+
       - name: ✅ Summary
         if: success()
         run: |
@@ -103,7 +103,7 @@ jobs:
           echo "Range: ${{ inputs.start }} to ${{ inputs.end }}"
           echo "Videos uploaded to Google Drive"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-      
+
       - name: ❌ Failure Notice
         if: failure()
         run: |

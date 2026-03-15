@@ -1,9 +1,11 @@
 # 🎬 Video Generator - Setup Guide
 
 ## 📋 Overview
+
 This guide will help you set up the automated video generation system using GitHub Actions.
 
 ## ⚙️ Prerequisites
+
 - GitHub account (already have: vinaykumarbu)
 - GitHub repository (already exists: image_audio_video_maker)
 - Terminal access
@@ -66,16 +68,19 @@ Copy the entire output (it's a JSON object).
 Edit the file: `docs/index.html`
 
 Find this line (around line 195):
+
 ```javascript
 const GITHUB_TOKEN = 'YOUR_GITHUB_TOKEN_HERE';
 ```
 
 Replace with your token from Step 2:
+
 ```javascript
 const GITHUB_TOKEN = 'ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
 ```
 
 Save the file and push:
+
 ```bash
 git add docs/index.html
 git commit -m "Configure GitHub token in web interface"
@@ -124,6 +129,7 @@ ls -la docs/
 ## 📱 Share with Your Team
 
 Send this link to your team:
+
 ```
 https://vinaykumarbu.github.io/image_audio_video_maker/
 ```
@@ -135,14 +141,17 @@ They can bookmark it and use it anytime!
 ## 🔧 Troubleshooting
 
 ### Workflow fails with "Authentication error"
+
 - Check if `GDRIVE_TOKEN` secret is set correctly
 - Token may have expired, regenerate: `gdrive about`
 
 ### Web interface says "Failed to start"
+
 - Check if GitHub token in `index.html` is correct
 - Token needs `repo` and `workflow` scopes
 
 ### No videos generated
+
 - Check if Google Drive folder IDs are configured in:
   - `download_from_gdrive.py`
   - `upload_to_gdrive.py`
@@ -155,6 +164,7 @@ View all workflow runs:
 https://github.com/vinaykumarbu/image_audio_video_maker/actions
 
 Each run shows:
+
 - ✅ Success/Failure status
 - ⏱️ Duration
 - 📋 Detailed logs
@@ -174,8 +184,8 @@ Each run shows:
 ## 📞 Support
 
 If issues arise:
+
 1. Check workflow logs on GitHub
 2. Verify Google Drive has the files
 3. Ensure folder IDs are correct
 4. Check secrets are configured
-
