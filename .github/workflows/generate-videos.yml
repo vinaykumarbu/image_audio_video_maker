@@ -54,7 +54,8 @@ jobs:
           python3 download_from_gdrive.py \
             --language ${{ inputs.language }} \
             --start ${{ inputs.start }} \
-            --end ${{ inputs.end }}
+            --end ${{ inputs.end }} \
+            --background
 
       - name: 📊 Verify Downloaded Files
         run: |
@@ -63,6 +64,9 @@ jobs:
           echo ""
           echo "Audio in input folder:"
           ls -lh input/audio/ || echo "No audio folder or empty"
+          echo ""
+          echo "Background music:"
+          ls -lh input/background/ || echo "No background music"
 
       - name: 🎬 Generate Videos
         run: |

@@ -40,14 +40,7 @@ logger = logging.getLogger(__name__)
 class GoogleDriveDownloader:
     """Download media files from Google Drive nested language folders"""
     
-    # # Base paths - matching your video generator structure
-    # BASE_PATH = "/Users/vkuma153/video_generator/image_audio_video_maker"
-    # INPUT_IMAGES_FOLDER = f"{BASE_PATH}/input/images"
-    # INPUT_AUDIO_FOLDER = f"{BASE_PATH}/input/audio"
-    # INPUT_BACKGROUND_FOLDER = f"{BASE_PATH}/input/background"
-    # TEMP_DOWNLOAD_FOLDER = f"{BASE_PATH}/temp_download"
-
-     # Base paths - automatically detect script location (works on any machine)
+    # Base paths - automatically detect script location (works on any machine)
     BASE_PATH = Path(__file__).parent.resolve()
     INPUT_IMAGES_FOLDER = BASE_PATH / "input" / "images"
     INPUT_AUDIO_FOLDER = BASE_PATH / "input" / "audio"
@@ -171,21 +164,18 @@ class GoogleDriveDownloader:
         return f"{code}{str(num).zfill(digits)}"
     
     def _clear_input_folders(self):
-        """Clear existing files in input folders"""
+        """Clear existing files in input folders (auto-delete in non-interactive mode)"""
         for folder_path, description in [(self.INPUT_IMAGES_FOLDER, "images"), 
                                          (self.INPUT_AUDIO_FOLDER, "audio")]:
             folder = Path(folder_path)
             if folder.exists():
                 files = [f for f in folder.iterdir() if f.is_file()]
                 if files:
-                    logger.warning(f"⚠️  Found {len(files)} existing {description} file(s)")
-                    response = input(f"   Delete existing {description} files? (y/n): ").strip().lower()
-                    if response == 'y':
-                        for file in files:
-                            file.unlink()
-                        logger.info(f"✓ Cleared {description} folder")
-                    else:
-                        logger.info(f"⚠️  Keeping existing {description} files")
+                    # Auto-delete without prompting (for GitHub Actions compatibility)
+                    logger.info(f"✓ Clearing {len(files)} existing {description} file(s)...")
+                    for file in files:
+                        file.unlink()
+                    logger.info(f"✓ Cleared {description} folder")
     
     def _download_folder_to_temp(self, folder_id, folder_type):
         """

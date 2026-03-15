@@ -29,11 +29,12 @@ logger = logging.getLogger(__name__)
 class VideoGenerator:
     """Generate high-resolution videos from matching image and audio files with background music"""
     
-    # Paths (Docker mounted volumes)
-    INPUT_IMAGES_FOLDER = "/Users/vkuma153/video_generator/image_audio_video_maker/input/images"
-    INPUT_AUDIO_FOLDER = "/Users/vkuma153/video_generator/image_audio_video_maker/input/audio"
-    INPUT_BACKGROUND_FOLDER = "/Users/vkuma153/video_generator/image_audio_video_maker/input/background/background.mp3"  # Change this to your background music file path
-    OUTPUT_VIDEOS_FOLDER = "/Users/vkuma153/video_generator/image_audio_video_maker/output"
+    # Paths - automatically detect script location (works on any machine)
+    BASE_PATH = Path(__file__).parent.resolve()
+    INPUT_IMAGES_FOLDER = BASE_PATH / "input" / "images"
+    INPUT_AUDIO_FOLDER = BASE_PATH / "input" / "audio"
+    INPUT_BACKGROUND_FOLDER = BASE_PATH / "input" / "background" / "background.mp3"
+    OUTPUT_VIDEOS_FOLDER = BASE_PATH / "output"
     
     # Supported formats
     IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.bmp'}
