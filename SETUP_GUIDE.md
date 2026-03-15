@@ -2,101 +2,110 @@
 
 ## 📋 Overview
 
-This guide will help you set up the automated video generation system using GitHub Actions.
+This guide will help you set up the automated video generation system using GitHub Actions with **manual triggering** from the GitHub website.
 
 ## ⚙️ Prerequisites
 
-- GitHub account (already have: vinaykumarbu)
-- GitHub repository (already exists: image_audio_video_maker)
-- Terminal access
-- Google Drive credentials configured
+- ✅ GitHub account (vinaykumarbu)
+- ✅ GitHub repository (image_audio_video_maker)
+- ✅ Terminal access
+- ⏳ Google Drive credentials (optional - can add later)
 
 ---
 
-## 🚀 Setup Instructions
+## 🚀 Quick Setup (2 Steps)
 
-### Step 1: Update Your GitHub Repository
+### Step 1: Push Your Code to GitHub
 
 ```bash
 cd /Users/vkuma153/video_generator/image_audio_video_maker
 
-# Add all latest changes
+# Add all changes
 git add .
 
 # Commit changes
-git commit -m "Add GitHub Actions workflow and web interface"
+git commit -m "Setup automated video generation with GitHub Actions"
 
 # Push to GitHub
 git push origin main
 ```
 
-### Step 2: Create GitHub Personal Access Token
+### Step 2: Bookmark the Workflow URL
 
-1. Go to: https://github.com/settings/tokens
-2. Click "Generate new token" → "Generate new token (classic)"
-3. Give it a name: `Video Generator Workflow`
-4. Select scopes:
-   - ✅ `repo` (Full control of private repositories)
-   - ✅ `workflow` (Update GitHub Action workflows)
-5. Click "Generate token"
-6. **COPY THE TOKEN** (you'll need it in Step 5)
-   - `ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
+Save this link in your browser bookmarks:
 
-### Step 3: Configure Google Drive Token
+```
+https://github.com/vinaykumarbu/image_audio_video_maker/actions/workflows/generate-videos.yml
+```
+
+**That's it!** You're ready to use it.
+
+---
+
+## 🎯 How to Generate Videos
+
+### Quick Steps:
+
+1. **Open your bookmark** (the link above)
+2. **Click "Run workflow"** button (top right)
+3. **Fill in the form:**
+   - Language: Select from dropdown (ENGLISH, KANNADA, HINDI, etc.)
+   - Start: First file number (e.g., 1)
+   - End: Last file number (e.g., 3)
+4. **Click the green "Run workflow"** button
+5. **Done!** Videos will be generated and downloaded in ~15-20 minutes
+
+---
+
+## 📂 Where to Find Output
+
+After the workflow completes:
+
+1. **Check the workflow run:**
+   - Go to: https://github.com/vinaykumarbu/image_audio_video_maker/actions
+   - Click on the latest run
+   - Scroll down to "Artifacts" section
+   - Download the `generated-videos` zip file
+
+2. **Videos will be in:** `output/` folder in the downloaded zip
+
+---
+
+## ⚙️ Optional: Setup Google Drive Upload
+
+If you want videos automatically uploaded back to Google Drive, follow these steps:
+
+### Step A: Setup gdrive Authentication
 
 ```bash
-# Authenticate with gdrive (if not already done)
+# Install gdrive (if not already done)
+brew install gdrive
+
+# Authenticate
 gdrive about
-
-# Copy the token
-cat ~/.gdrive/token_v2.json
 ```
 
-Copy the entire output (it's a JSON object).
+This will give you instructions to set up Google API credentials (takes ~30 minutes).
 
-### Step 4: Add Secrets to GitHub
+### Step B: Add GDRIVE_TOKEN to GitHub Secrets
 
-1. Go to: https://github.com/vinaykumarbu/image_audio_video_maker/settings/secrets/actions
-2. Click "New repository secret"
-3. Add secret:
+1. After authentication completes, copy your token:
+
+   ```bash
+   cat ~/.gdrive/token_v2.json
+   ```
+
+2. Go to: https://github.com/vinaykumarbu/image_audio_video_maker/settings/secrets/actions
+
+3. Click "New repository secret"
+
+4. Add secret:
    - Name: `GDRIVE_TOKEN`
-   - Value: Paste the content from `token_v2.json`
-4. Click "Add secret"
+   - Value: Paste the entire content from `token_v2.json`
 
-### Step 5: Configure Web Interface
+5. Click "Add secret"
 
-Edit the file: `docs/index.html`
-
-Find this line (around line 195):
-
-```javascript
-const GITHUB_TOKEN = 'YOUR_GITHUB_TOKEN_HERE';
-```
-
-Replace with your token from Step 2:
-
-```javascript
-const GITHUB_TOKEN = 'ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
-```
-
-Save the file and push:
-
-```bash
-git add docs/index.html
-git commit -m "Configure GitHub token in web interface"
-git push origin main
-```
-
-### Step 6: Enable GitHub Pages
-
-1. Go to: https://github.com/vinaykumarbu/image_audio_video_maker/settings/pages
-2. Under "Source", select:
-   - Source: `Deploy from a branch`
-   - Branch: `main`
-   - Folder: `/docs`
-3. Click "Save"
-4. Wait 1-2 minutes
-5. Your page will be live at: https://vinaykumarbu.github.io/image_audio_video_maker/
+Now uploads will work automatically!
 
 ---
 

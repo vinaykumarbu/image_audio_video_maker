@@ -1,52 +1,105 @@
-# 📖 User Guide: How to Generate Videos
+# 📖 Quick Reference: Manual Workflow Trigger
 
 ---
 
-## 🎯 What You Need
+## 🎯 How to Generate Videos (30 seconds)
 
-1. **Internet connection**
-2. **Web browser** (Chrome, Safari, Firefox, or Edge)
-3. **This link**: https://vinaykumarbu.github.io/image_audio_video_maker/
+### **Step 1:** Open the Workflow Page
 
-**That's it!** No apps to install, no accounts to create.
-
----
-
-## 📝 Step-by-Step Instructions
-
-### Step 1: Open the Video Generator
-
-Click this link or paste it in your browser:
+Bookmark and open this link:
 
 ```
-https://vinaykumarbu.github.io/image_audio_video_maker/
-```
-
-You'll see a form like this:
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   🎬 Video Generator
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Language *
-[-- Select Language --  ▼]
-
-Start Number *
-[1                      ]
-
-End Number *
-[3                      ]
-
-[ Generate Videos      ]
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+https://github.com/vinaykumarbu/image_audio_video_maker/actions/workflows/generate-videos.yml
 ```
 
 ---
 
-### Step 2: Select Language
+### **Step 2:** Click "Run workflow"
 
-Click the **Language** dropdown and select the language:
+Look for the **"Run workflow"** button on the right side (green button).
+
+---
+
+### **Step 3:** Fill in the Details
+
+A form will appear with these fields:
+
+| Field        | Example   | Description                                                |
+| ------------ | --------- | ---------------------------------------------------------- |
+| **Language** | `ENGLISH` | Select: ENGLISH, KANNADA, HINDI, TAMIL, TELUGU, or MARATHI |
+| **Start**    | `1`       | First file number (e.g., 1 for GGENG001)                   |
+| **End**      | `3`       | Last file number (e.g., 3 for GGENG003)                    |
+
+---
+
+### **Step 4:** Click the Green "Run workflow" Button
+
+The workflow will start immediately!
+
+---
+
+## ⏱️ What Happens Next?
+
+1. **Download** (~2 min): Downloads images and audio from Google Drive
+2. **Generate** (~10-15 min): Creates videos using ffmpeg
+3. **Upload** (~2 min): Uploads videos back to Google Drive (optional)
+
+**Total Time:** ~15-20 minutes
+
+---
+
+## 📊 Check Progress
+
+1. Go to: https://github.com/vinaykumarbu/image_audio_video_maker/actions
+2. Click on the latest workflow run (at the top)
+3. Watch the progress in real-time
+
+**Status indicators:**
+
+- 🟡 Yellow spinning = Running
+- ✅ Green checkmark = Success
+- ❌ Red X = Failed (check logs)
+
+---
+
+## 📂 Get Your Videos
+
+### Option 1: From GitHub (if upload disabled)
+
+1. Go to the completed workflow run
+2. Scroll down to **"Artifacts"** section
+3. Download the `generated-videos` zip file
+4. Unzip and find videos in `output/` folder
+
+### Option 2: From Google Drive (if upload enabled)
+
+Videos will automatically appear in:
+
+```
+Srisatupasi > GG LANGUAGE > video files > MP4 files
+```
+
+Example: For English videos, check:
+
+```
+Srisatupasi > GG ENGLISH > video files > MP4 files
+```
+
+---
+
+## 💬 Communication with Team
+
+When your team says: _"We uploaded GGENG001-003 images and audio"_
+
+You:
+
+1. Open the bookmark
+2. Click "Run workflow"
+3. Select: Language=ENGLISH, Start=1, End=3
+4. Click green button
+5. Reply: _"Started! Videos will be ready in ~20 minutes"_
+
+**That's it!** No need to download/upload manually anymore.
 
 - English
 - Kannada
