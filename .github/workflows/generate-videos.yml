@@ -46,17 +46,7 @@ jobs:
           brew install gdown
           echo "Installing ffmpeg..."
           brew install ffmpeg
-          echo "Installing gdrive..."
-          brew tap prasmussen/gdrive
-          brew install gdrive || echo "gdrive install failed, trying alternate method"
-
-      - name: 📂 Setup Google Drive Authentication
-        env:
-          GDRIVE_TOKEN: ${{ secrets.GDRIVE_TOKEN }}
-        run: |
-          mkdir -p ~/.gdrive
-          echo "$GDRIVE_TOKEN" > ~/.gdrive/token_v2.json
-          echo "✓ Google Drive authentication configured"
+          echo "✓ All dependencies installed"
 
       - name: 📥 Download Media from Google Drive
         run: |
@@ -85,13 +75,22 @@ jobs:
           echo "Generated videos:"
           ls -lh output/*.mp4 || echo "No videos generated"
 
-      #   - name: 📤 Upload Videos to Google Drive
-      #     run: |
-      #       echo "Uploading ${{ inputs.language }} videos to Google Drive..."
-      #       python3 upload_to_gdrive.py \
-      #         --language ${{ inputs.language }} \
-      #         --delete
-      #       echo "✓ Upload complete, local files deleted"
+      - name: 📦 Upload Videos as Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-videos-${{ inputs.language }}-${{ inputs.start }}-${{ inputs.end }}
+          path: output/*.mp4
+          retention-days: 30
+
+      # Upload to Google Drive (disabled - requires gdrive setup with OAuth)
+      # To enable: setup gdrive with Google API credentials and add GDRIVE_TOKEN secret
+      # - name: 📤 Upload Videos to Google Drive
+      #   run: |
+      #     echo "Uploading ${{ inputs.language }} videos to Google Drive..."
+      #     python3 upload_to_gdrive.py \
+      #       --language ${{ inputs.language }} \
+      #       --delete
+      #     echo "✓ Upload complete, local files deleted"
 
       - name: ✅ Summary
         if: success()
@@ -101,7 +100,12 @@ jobs:
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
           echo "Language: ${{ inputs.language }}"
           echo "Range: ${{ inputs.start }} to ${{ inputs.end }}"
-          echo "Videos uploaded to Google Drive"
+          echo ""
+          echo "📥 Download your videos:"
+          echo "   Go to Actions → This workflow run → Artifacts section"
+          echo "   Click: generated-videos-${{ inputs.language }}-${{ inputs.start }}-${{ inputs.end }}"
+          echo ""
+          echo "Videos will be available for 30 days"
           echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
       - name: ❌ Failure Notice
